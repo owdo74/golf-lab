@@ -1,0 +1,46 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><meta charset="utf-8"><title>Retro Golf Prototype</title><style>*{box-sizing:border-box}body{margin:0;background:#172b30;color:#f5edcf;font: bold 16px monospace;text-align:center}main{max-width:520px;margin:auto;padding:12px}h1{font-size:23px;letter-spacing:3px;margin:8px}small{color:#a8c5b1}header,footer{display:flex;justify-content:space-between;align-items:center;margin:12px 0}canvas{width:100%;aspect-ratio:3/4;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;image-rendering:pixelated;background:#203c36;border:4px solid #47604d;border-radius:5px}button{font:inherit;color:#f5edcf;background:#38574d;border:2px solid #71937b;padding:10px;border-radius:4px;cursor:pointer}#msg{min-height:38px;color:#f7d57b}#power{height:8px;background:#344b43;margin:8px 0}#bar{height:100%;background:#f4c65d;width:0}</style></head><body><main><h1>RETRO GOLF</h1><small>PLAYABLE PROTOTYPE • 01</small><header><span id="hole"></span><span id="strokes"></span><span id="total"></span></header><canvas id="c" width="360" height="480"></canvas><div id="power"><div id="bar"></div></div><div id="msg">Pull back from the ball, then release.</div><footer><button id="prev">◀ Hole</button><button id="reset">Restart</button><button id="next">Hole ▶</button></footer><small>Drag opposite your intended shot • Mouse or touch</small></main><script>
+const c=document.querySelector('#c'),g=c.getContext('2d'),$=id=>document.getElementById(id);const courses=[{name:'First Roll',par:2,s:[180,405],h:[180,75],w:[],sand:[],water:[]},{name:'Bank Shot',par:3,s:[90,405],h:[270,75],w:[[30,225,220,20]],sand:[[240,300,80,60]],water:[]},{name:'Island Bend',par:3,s:[75,410],h:[285,65],w:[[150,300,20,140]],sand:[[210,120,100,70]],water:[[30,185,220,85]]},{name:'Switchback',par:4,s:[70,410],h:[290,65],w:[[30,310,220,18],[110,165,220,18]],sand:[[30,195,75,90]],water:[[245,205,85,65]]},{name:'The Gauntlet',par:4,s:[180,410],h:[180,65],w:[[30,340,115,18],[215,340,115,18],[120,220,120,18],[30,115,100,18],[230,115,100,18]],sand:[[30,245,85,80],[245,245,85,80]],water:[[30,145,65,65],[265,145,65,65]]}];let i=0,b,v,shots=0,scores=[],aim=null,done=false,last,acc=0;const R=7;function load(n){i=(n+5)%5;let p=courses[i];b={x:p.s[0],y:p.s[1]};v={x:0,y:0};shots=0;done=false;aim=null;last={...b};$('msg').textContent=p.name+' • Par '+p.par+' — Pull back and release.';update()}function update(){$('hole').textContent='HOLE '+(i+1)+'/5';$('strokes').textContent='SHOTS '+shots;$('total').textContent='TOTAL '+scores.reduce((a,b)=>a+(b||0),0)}function rect(r,color){g.fillStyle=color;g.fillRect(...r)}function inside(r){return b.x>r[0]&&b.x<r[0]+r[2]&&b.y>r[1]&&b.y<r[1]+r[3]}function moving(){return Math.hypot(v.x,v.y)>.12}function step(){if(done||!moving())return;let p=courses[i];for(let axis of ['x','y']){b[axis]+=v[axis];let lo=30+R,hi=(axis==='x'?330:450)-R;if(b[axis]<lo||b[axis]>hi){b[axis]=Math.max(lo,Math.min(hi,b[axis]));v[axis]*=-.82}for(let r of p.w){if(b.x+R>r[0]&&b.x-R<r[0]+r[2]&&b.y+R>r[1]&&b.y-R<r[1]+r[3]){b[axis]=v[axis]>0?r[axis==='x'?0:1]-R:r[axis==='x'?0:1]+r[axis==='x'?2:3]+R;v[axis]*=-.82}}}if(p.water.some(inside)){b={...last};v={x:0,y:0};shots++;update();$('msg').textContent='Splash! One penalty stroke.';return}let speed=Math.hypot(v.x,v.y),d=Math.hypot(b.x-p.h[0],b.y-p.h[1]);if(d<10&&speed<5){b={x:p.h[0],y:p.h[1]};v={x:0,y:0};done=true;scores[i]=shots;update();$('msg').textContent=(shots===1?'HOLE IN ONE!': 'HOLED IN '+shots+'!')+' '+(i===4?'Round complete — replay any hole.':'Tap Hole ▶ to continue.');return}let f=p.sand.some(inside)?.94:.985;v.x*=f;v.y*=f;if(!moving()){v={x:0,y:0};$('msg').textContent='Ready for your next shot.'}}
+function draw(){let p=courses[i];rect([0,0,360,480],'#233e37');rect([22,22,316,436],'#92764e');rect([30,30,300,420],'#559b55');for(let y=30;y<450;y+=28)rect([30,y,300,14],'#5fa65c');for(let x=38;x<330;x+=19)for(let y=38;y<450;y+=23){g.fillStyle='#4c914e';g.fillRect(x,y,2,2)}for(let r of p.sand){rect(r,'#d6b773');for(let x=r[0]+5;x<r[0]+r[2];x+=11)for(let y=r[1]+5;y<r[1]+r[3];y+=9)rect([x,y,2,2],'#b89a5b')}for(let r of p.water){rect(r,'#367d9c');for(let y=r[1]+7;y<r[1]+r[3];y+=13)for(let x=r[0]+5;x<r[0]+r[2]-8;x+=22)rect([x,y,9,2],'#75b6bd')}for(let r of p.w){rect(r,'#3d4e42');rect([r[0],r[1],r[2],5],'#a6b18a')}g.fillStyle='#20372e';g.beginPath();g.arc(...p.h,10,0,Math.PI*2);g.fill();rect([p.h[0],p.h[1]-28,2,28],'#eee8ce');rect([p.h[0]+2,p.h[1]-28,16,10],'#e77655');if(!done){g.fillStyle='#345f3d';g.beginPath();g.arc(b.x+2,b.y+3,R,0,7);g.fill();g.fillStyle='#fff5d8';g.beginPath();g.arc(b.x,b.y,R,0,7);g.fill();rect([b.x-3,b.y-4,3,2],'#fff')}if(aim){let dx=b.x-aim.x,dy=b.y-aim.y,l=Math.hypot(dx,dy),k=Math.min(l,100)/Math.max(l,1);g.strokeStyle='#fff5d8';g.setLineDash([5,5]);g.beginPath();g.moveTo(b.x,b.y);g.lineTo(b.x+dx*k,b.y+dy*k);g.stroke();g.setLineDash([]);$('bar').style.width=Math.min(l,100)+'%'}else $('bar').style.width='0%'}let prev=performance.now();function loop(t){acc+=Math.min(t-prev,50);prev=t;while(acc>=1000/60){step();acc-=1000/60}draw();requestAnimationFrame(loop)}function pos(e){let r=c.getBoundingClientRect();return{x:(e.clientX-r.left-c.clientLeft)*360/(c.clientWidth),y:(e.clientY-r.top-c.clientTop)*480/(c.clientHeight)}}
+
+c.addEventListener('pointerdown', e => {
+  if (!e.isPrimary || e.button !== 0 || aim || done || moving()) return;
+  const p = pos(e);
+  if (Math.hypot(p.x - b.x, p.y - b.y) > 35) return;
+  e.preventDefault();
+  c.setPointerCapture(e.pointerId);
+  aim = { ...p, pointerId: e.pointerId };
+});
+
+c.addEventListener('pointermove', e => {
+  if (aim?.pointerId !== e.pointerId) return;
+  Object.assign(aim, pos(e));
+});
+
+c.addEventListener('pointerup', e => {
+  if (aim?.pointerId !== e.pointerId) return;
+  aim = null;
+  const p = pos(e);
+  const dx = b.x - p.x, dy = b.y - p.y, length = Math.hypot(dx, dy);
+  if (length < 5) return;
+  const power = Math.min(length, 100) / length * .115;
+  last = { ...b };
+  v = { x: dx * power, y: dy * power };
+  shots++;
+  update();
+  $('msg').textContent = 'Ball in play\u2026';
+});
+
+function cancelAim(e) {
+  if (aim?.pointerId === e.pointerId) aim = null;
+}
+c.addEventListener('pointercancel', cancelAim);
+c.addEventListener('lostpointercapture', cancelAim);
+window.addEventListener('blur', () => { aim = null; });
+
+// Keep the browser from panning during a putt.
+c.addEventListener('touchmove', e => {
+  if (aim && e.cancelable) e.preventDefault();
+}, { passive: false });
+
+$('prev').onclick=()=>load(i-1);$('next').onclick=()=>load(i+1);$('reset').onclick=()=>{delete scores[i];load(i)};load(0);requestAnimationFrame(loop);
+</script></body></html>
